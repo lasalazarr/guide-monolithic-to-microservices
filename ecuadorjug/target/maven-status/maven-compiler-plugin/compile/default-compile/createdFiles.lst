@@ -1,8 +1,0 @@
-org/ecuadorjug/CloudResource.class
-org/ecuadorjug/CorsFilter.class
-org/ecuadorjug/CloudNotTakenValidator.class
-org/ecuadorjug/Cloud.class
-org/ecuadorjug/CloudNotValid.class
-org/ecuadorjug/JAXRSConfiguration.class
-org/ecuadorjug/BusinessLogic.class
-org/ecuadorjug/ListenClouds.class

@@ -1,0 +1,12 @@
+<server description="Laboratorio 01 Hackday Open Liberty Server">
+
+  <featureManager>
+      <feature>jaxrs-2.1</feature>
+      <feature>jsonp-1.1</feature>
+  </featureManager>
+
+  <httpEndpoint httpPort="${default.http.port}" httpsPort="${default.https.port}"
+      id="defaultHttpEndpoint" host="*" />
+
+  <webApplication location="application.war" contextRoot="${app.context.root}"/>
+</server>

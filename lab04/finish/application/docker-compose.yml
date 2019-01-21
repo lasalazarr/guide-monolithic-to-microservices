@@ -1,0 +1,16 @@
+version: "3.7"
+services:
+
+  members-app:
+    image: member-application:1.0.0-SNAPSHOT
+    ports:
+      - "9081:9081"
+      - "9444:9444"
+
+  hack-day-app:
+    depends_on:
+      - members-app
+    image: application:1.0.0-SNAPSHOT
+    ports:
+      - "9080:9080"
+      - "9443:9443"

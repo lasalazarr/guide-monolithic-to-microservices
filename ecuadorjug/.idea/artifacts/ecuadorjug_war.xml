@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="war" name="ecuadorjug:war">
-    <output-path>$PROJECT_DIR$/target</output-path>
-    <root id="archive" name="ecuadorjug.war">
-      <element id="artifact" artifact-name="ecuadorjug:war exploded" />
-    </root>
-  </artifact>
-</component>

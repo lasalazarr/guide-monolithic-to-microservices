@@ -1,0 +1,23 @@
+<server description="OpenLiberty MicroProfile server">
+
+    <featureManager>
+        <feature>jaxrs-2.1</feature>
+        <feature>jsonp-1.1</feature>
+        <feature>cdi-2.0</feature>
+        <feature>mpConfig-1.2</feature>
+        <feature>mpRestClient-1.1</feature>
+        <feature>mpHealth-1.0</feature>
+        <feature>mpMetrics-1.1</feature>
+        <feature>mpFaultTolerance-1.0</feature>
+        <feature>mpOpenAPI-1.0</feature>
+        <feature>beanValidation-2.0</feature>
+    </featureManager>
+
+    <quickStartSecurity userName="admin" userPassword="password"/>
+    <keyStore id="defaultKeyStore" password="mpKeystore" location="key.jks"/>
+
+    <httpEndpoint httpPort="${default.http.port}" httpsPort="${default.https.port}" id="defaultHttpEndpoint" host="*"/>
+    <applicationManager autoExpand="true"/>
+    <webApplication context-root="/" location="member-application.war"/>
+
+</server>
