@@ -253,5 +253,296 @@ This kind of test has more lines of code than the resource implementation. This 
 
 We have finished our first code exercise; now let's move on to lab 2.
 
+## Lab 2
 
+Now we are going to go to the directory lab02; where we are going to find two folders:
+
+- start: Contains a base project we are going to work with.
+- finish: Contains the project after making the laboratory.
+
+Let's go to the start directory and we can import it into the IDE of your preference as a maven project.
+
+The structure of the project should look like the following:
+
+- api (Module that exposes the interfaces of our Business API, making use of Plugin Framework for Java (PF4J) http://www.pf4j.org)
+- api-impl (Module that implements the interfaces of our API, is our business layer)
+- application (Module that launches our monolithic application in openliberty and has our resources rest)
+- domain (Module that includes the model of our business domain)
+- mongito (Module that provides us with an integrated Mongo and MongoClient NoSQL Base)
+- pom.xml (Descriptor of our project)
+- repository (Module that implements our access and logic of our business model)
+
+Many people will think that the application is overloaded or in English is known as the concept "Over-architected", but through the workshop we will explain why the separation of modules and layers that allow us to have the cleanest code and reusable in business applications of great magnitude. 
+
+A view of the logical layers that our application has is shown below:
+
+-------------    ----- --------       -------------    -----------
+| APPLICATION|<->|API|<->API-IMPL|<->| REPOSITORY| <-> | MONGODB |
+-------------    ----- --------       -------------    -----------
+
+### Extending our business model using JPA and Lombok 
+
+After understanding the structure of our project and having executed lab01, where we have explored Openliberty and how to create a simple application with REST resources, now we are going to include to our application the logic that will allow the registration of participants to our hackday; for this we are going to find objects that represent our business domain. 
+
+Let's go to the domain module and find in the folder /start/domain/src/main/java/org/ecjug/hackday/domain/model the following classes: 
+
+- Country.java
+- Event.java
+- Group.java
+
+We are going to include the Member.java class in the /start/domain/src/main/java/org/ecjug/hackday/domain/model/Member.java file:
+
+```
+package org.ecjug.hackday.domain.model;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.bson.types.ObjectId;
+
+import javax.validation.constraints.NotBlank;
+import java.io.Serializable;
+
+@Builder(toBuilder = true)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public final class Member implements Serializable {
+
+    @JsonIgnore
+    private ObjectId id;
+    @NotBlank
+    private String name;
+    private String country;
+    private String city;
+    private String comments;
+
+    private String memberId;
+
+
+    public String getMemberId() {
+        if (id != null) {
+            memberId = id.toString();
+        }
+        return memberId;
+    }
+}
+
+
+```
+
+Let's note that we are using notes that belong to the Lombok project (https://projectlombok.org/) which helps us to have our code cleaner as we will not find get methods, set, builders or declaration of loggers in our application.
+
+### Creating the data access layer to MongoDB 
+
+Now let's go to the repository module, where we are going to create the access layer of our new model of Members of a user group; for this we are going to create the file /start/repository/src/main/java/org/ecjug/hackday/repository/impl/MemberRepositoryImpl.java:
+
+```
+package org.ecjug.hackday.repository.impl;
+
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
+import org.bson.types.ObjectId;
+import org.ecjug.hackday.domain.model.Member;
+import org.ecjug.hackday.repository.MemberRepository;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+
+import static com.mongodb.client.model.Filters.eq;
+
+@ApplicationScoped
+public class MemberRepositoryImpl implements MemberRepository {
+
+    @Inject
+    private MongoDatabase database;
+
+    private MongoCollection<Member> collection;
+
+    @Override
+    public Member add(Member member) {
+        Objects.requireNonNull(member, "Member can't be null");
+        member.setId(new ObjectId(new Date()));
+        dbCollection().insertOne(member);
+        return member;
+    }
+
+    @Override
+    public List<Member> memberByName(String name) {
+        Objects.requireNonNull(name, "Name can't be null");
+        return dbCollection().find(Filters.regex("name", name)).into(new ArrayList<>());
+    }
+
+    @Override
+    public Member byId(String id) {
+        return dbCollection().find(eq("_id", new ObjectId(id))).first();
+    }
+
+    @Override
+    public List<Member> list() {
+        List<Member> memberList = new ArrayList<>();
+        MongoCursor<Member> mongoCursor = dbCollection().find().iterator();
+        mongoCursor.forEachRemaining(memberList::add);
+        return memberList;
+    }
+
+
+    private MongoCollection<Member> dbCollection() {
+        if (this.collection == null) {
+            this.collection = this.database.getCollection("Member", Member.class);
+        }
+        return this.collection;
+    }
+}
+
+```
+
+We are going to find that this implementation of the MemberRepository interface, includes dependency injection to use MongoDB as our data repository (@Inject private MongoDatabase database;).
+
+### Creating our business logic layer
+
+Next we are going to go to the api-impl module, where we are going to create our business logic layer for our new model of Members of a user group; for this we are going to create the file /start/api-impl/src/main/java/org/ecjug/hackday/api/impl/client/MembersServiceImpl.java:
+
+```
+package org.ecjug.hackday.api.impl.client;
+
+import lombok.extern.slf4j.Slf4j;
+import org.ecjug.hackday.api.MembersService;
+import org.ecjug.hackday.domain.model.Member;
+import org.ecjug.hackday.repository.MemberRepository;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import java.util.List;
+
+@Slf4j
+@ApplicationScoped
+public class MembersServiceImpl implements MembersService {
+
+    @Inject
+    private MemberRepository memberRepository;
+
+    @Override
+    public List<Member> list() {
+        return memberRepository.list();
+    }
+
+    @Override
+    public Member add(Member member) {
+        return memberRepository.add(member);
+    }
+}
+
+```
+
+### Creating a new resource JAX-RS 
+
+And now we are going to expose our REST services using JAX-RS and JSON-P that exposes an API to list our members of a JUG; for this we are going to go to the application module and create the file /start/application/src/main/java/org/ecjug/hackday/app/resources/MemberResource.java:
+
+```
+package org.ecjug.hackday.app.resources;
+
+import org.ecjug.hackday.api.MembersService;
+import org.ecjug.hackday.domain.model.Member;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
+import java.util.List;
+
+@ApplicationScoped
+@Produces({MediaType.APPLICATION_JSON})
+@Consumes(MediaType.APPLICATION_JSON)
+@Path("/member")
+public class MemberResource {
+
+    @Inject
+    private MembersService membersService;
+
+    @GET
+    @Path("/list")
+    public List<Member> listGroups() {
+        return membersService.list();
+    }
+
+    @POST
+    @Path("/add")
+    public Member addMember(Member member) {
+        return membersService.add(member);
+    }
+}
+```
+
+### Running our server
+
+To compile the application we can execute:
+
+``
+mvn install
+``
+
+At the console we are going to see that several tests of unit and of integration are executed until arriving to have in console:
+
+```
+[INFO] Reactor Summary:
+[INFO] 
+[INFO] HackDay ::: Monolith Microlith Microservices ....... SUCCESS [  0.913 s]
+[INFO] HackDay ::: Mongo Embedded ......................... SUCCESS [ 10.139 s]
+[INFO] HackDay ::: Domain ................................. SUCCESS [  0.805 s]
+[INFO] HackDay ::: Repository ............................. SUCCESS [ 14.106 s]
+[INFO] HackDay ::: API .................................... SUCCESS [  0.112 s]
+[INFO] HackDay ::: API Implementation ..................... SUCCESS [ 26.412 s]
+[INFO] HackDay ::: Application ............................ SUCCESS [ 21.816 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 01:14 min
+[INFO] Finished at: 2019-01-11T13:30:26-05:00
+[INFO] Final Memory: 37M/137M
+[INFO] ------------------------------------------------------------------------
+
+```
+
+Next, we can run our server in the application module we run liberty:start-server:
+
+``
+mvn liberty:start-server
+``
+
+To stop the server we can run:
+
+``
+mvn liberty:stop-server
+``
+
+### Test our service
+
+You can test our new service manually by starting the server and pointing a web browser to the URL of http://localhost:9080/ and let's see our home page of our application as follows:
+
+alt text](https://github.com/lasalazarr/workshop-05-monolith-microlith-microservices/blob/master/images/launchPage.png)
+
+And our new resource which lists the members of the user group at the following URL http://localhost:9080/hackday/member/list which at the moment has no member.
+
+To create new members we can run in console using the method post to the url http://localhost:9080/hackday/member/add
+
+We have finished our second code exercise; now we are going to move on to laboratory 3 where we will include notes from the Microprofile project.
+
+## Microprofile
+
+Eclipse MicroProfile is a modular set of technologies designed to enable you to write native cloud microservices at Java™ In the next section of this workshop we will include several of the MicroProfile features that will help us develop and manage native cloud microservices.
+
+In our next lab we will include the following Microprofile APIs:
+
+alt text](https://github.com/lasalazarr/workshop-05-monolith-microlith-microservices/blob/master/images/microprofile-que-aprenderemos.png)
+
+This modular approach we look for in our developments makes the application easy to understand, easy to develop, easy to test and easy to maintain.
 
