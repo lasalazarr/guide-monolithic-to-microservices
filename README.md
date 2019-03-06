@@ -27,7 +27,7 @@ Open Liberty is an application server designed for the cloud. It is small, light
 
 Maven is an automation creation tool that provides an efficient way to develop Java applications. Using Maven, we will build our services. You will then perform the server configuration and code changes and see how a running server picks them up. You'll also explore how to package your application with the server runtime so that it can be deployed anywhere at once. Finally, we'll pack the application along with the server configuration into a Docker image and run it as a container.
 
-###Notes:
+### Notes:
 
 The repository is composed by a project that can be deployed as monolith, microlith or microservices; also in the first laboratories we will create simple applications without the need of the pre elaborated code. The beginning of the workshop begins with the file readme.md that contains a summary of the work to be done. 
 
@@ -37,8 +37,6 @@ The repository is composed of 4 folders:
 - lab02: It includes the structure of our project that exposes an API rest of administration of the members and groups of Hackday participating users, manages persistence using mongo as NoSQL base. 
 - lab03: In the same way that the monotilo branch is composed of two folders start and finish.
 - lab04: Contains the initial project to base it on microservices and the folder finish the whole workshop.
-
-Each branch has a file readme.md by which begins the workshop of each pattern of construction of each application.
 
 ## Monoliths
 
