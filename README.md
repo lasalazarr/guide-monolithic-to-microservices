@@ -1,12 +1,6 @@
-# workshop-05-monolith-microlith-microservices
+# Monolith to Microlith and Microservices
 
 En la era que estamos de contenedores, cloud y muchas herramientas que escoger en el momento de crear nuevas aplicaciones o evolucionar las que tenemos; presentamos tips y hacemos enfasis en patrones y practicas elementales que aplican en nuestro dia a dia de desarrollo de aplicaciones empresariales.  A travez de este taller de 2 horas vamos a crear una aplicacion desde pasando de Monolitica a Microlitica y finalmente Microservicios.
-
-##  Canal de slack para comunicacion durante el HackDay
-https://join.slack.com/t/comunidad-jugs/shared_invite/enQtNDAyNzEzNTUzNTEwLWIyN2I2N2U2NWNjMDkxMWI3Njk1NDJkZTU2NDU1MDBlYWNmNzRhNTRiMWJkZGYxNWU1ZTEzMTQ2NDUyZjVmYWQ
-
-## Canal de youtube
-https://www.youtube.com/watch?v=aiLPE9J2tV0
 
 ## Requisitos:
 
