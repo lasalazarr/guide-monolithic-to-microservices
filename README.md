@@ -832,6 +832,104 @@ In short, many institutions and companies have an attempt to perform microservic
 We are not going to go into the theoretical definition of Microservices; and we are going to take our practical case where we are going to imagine that by the high use of our application and our development team to scale in size since we have had success with our application of event registration of members of java users we need to divide it into microservices. 
 
 
+## Lab 4
+
+Now we are going to go to the directory lab04; where we are going to find two folders:
+
+- start: It contains a base project with which we are going to work and we are going to divide it in microservices that is based on our finished application of lab03; to divide it in modules and deploy it making use of docker compose.
+
+- finish: Contains the project after making the laboratory.
+
+Let's go to the start directory and we can import it into the IDE of your preference as a maven project.
+
+## Separate API from JUG Members
+
+Let's move our member API specifically the file /application/src/main/java/org/ecjug/hackday/app/resources/MemberResource.java to a new application to the file /member-application/src/main/java/org/ecjug/member/app/resource/MemberResource.java.
+
+That is, in our application module you will no longer have the file /application/src/main/java/org/ecjug/hackday/app/resources/MemberResource.java and you will be in a new module called member-application.
+
+
+## Change in our business logic layer
+
+Now we are going to perform a refactor of our api-impl module where we made use of user members; in the file /api-impl/src/main/java/org/ecjug/hackday/api/impl/client/GroupServiceImpl.java
+
+Let's change instead of using the private MemberRepository memberRepository; let's include the Rest Client of user members:
+
+```
+@Inject
+    @RestClient //RestClient with injection
+    private CountryApi countryApi;
+```
+
+And the methods where we used the repository now make use of the services in the following way:
+
+```
+@Override
+    @Metered
+    public List<Member> loadMembersFromMeetUpGroup(Group group) {
+        List<HashMap> membersFromMeetUp = meetUpApi().members(group.getUrlname());
+        List<Member> memberList = toMemberList(membersFromMeetUp);
+        memberList.forEach(memberApi::add);
+        group.setMembersList(memberList);
+        groupRepository.update(group);
+        return memberList;
+    }
+
+    @Override
+    @Metered
+    public void addMemberToGroup(String groupId, Member member) {
+        final Member memberFromDB = memberApi.add(member);
+        Optional<Group> groupOptional = groupRepository.byId(groupId);
+        groupOptional.ifPresent(group -> {
+            group.addMember(memberFromDB);
+            groupRepository.update(group);
+        });
+    }
+
+```
+
+### Compile our applications
+
+To compile our applications we can run at the root of the project:
+
+``
+mvn install
+``
+
+### Running with docker compose
+
+At the time of compiling the application denoted a delay, which had to do with the creation of images from our openliberty server, to run the images created using docker compose console we can run: 
+
+``
+docker-compose up
+``
+
+We can see the documentation of our APIs running in the URLs:
+
+- http://localhost:9080/openapi/ui/
+- http://localhost:9081/openapi/ui/
+
+Or the home pages of each of our applications in the URLs:
+
+- http://localhost:9080/
+
+![alt text](https://github.com/lasalazarr/workshop-05-monolith-microlith-microservices/blob/master/images/launchPage.png)
+
+- http://localhost:9081/
+
+![alt text](https://github.com/lasalazarr/workshop-05-monolith-microlith-microservices/blob/master/images/launchPage2.png)
+
+We have completed our fourth coding exercise; we have gone through the concept of Monolith, Microliths and Microservices; we appreciate your interest and participation. 
+
+# Acknowledgements
+
+Learn more about the authors of these workshops by following them on twitter a:
+
+- [Alberto Salazar](https://twitter.com/betoSalazar)
+- [Kleber Ayala](https://twitter.com/keal_)
+
+Founding members of the Ecuador Java Users Group [EcuadorJug](https://twitter.com/EcuadorJUG)
+
 
 
 
