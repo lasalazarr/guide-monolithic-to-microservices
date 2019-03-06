@@ -542,7 +542,7 @@ Eclipse MicroProfile is a modular set of technologies designed to enable you to 
 
 In our next lab we will include the following Microprofile APIs:
 
-[!alt text](https://github.com/lasalazarr/guide-monolithic-to-microservices/blob/master/images/microprofile-que-aprenderemos.png)
+![alt text](https://github.com/lasalazarr/workshop-05-monolith-microlith-microservices/blob/master/images/microprofile-que-aprenderemos.png)
 
 This modular approach we look for in our developments makes the application easy to understand, easy to develop, easy to test and easy to maintain.
 
