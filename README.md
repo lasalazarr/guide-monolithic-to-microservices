@@ -546,3 +546,295 @@ In our next lab we will include the following Microprofile APIs:
 
 This modular approach we look for in our developments makes the application easy to understand, easy to develop, easy to test and easy to maintain.
 
+## Lab 3
+
+Now we are going to go to the directory lab03; where we are going to find two folders:
+
+- start: Contains a base project that we are going to work with and we will include annotations of several of the modules provided by microprofile.
+- finish: Contains the project after making the laboratory.
+
+Let's go to the start directory and we can import it into the IDE of your preference as a maven project.
+
+### Microprofile Health Check
+
+Health checks are used to probe the status of a node from another machine or from our application (e.g., the kubernet service controller).
+
+In our scenario, we are going to include a Health Check to check that our embedded instance of MongoDB is working correctly; for this we are going to go to our mongito project and create the file /start/mongito/src/main/java/org/ecjug/hackday/mongo/health/MongoHealthCheck.java:
+
+```
+package org.ecjug.hackday.mongo.health;
+
+import com.mongodb.MongoClient;
+import lombok.extern.slf4j.Slf4j;
+import org.eclipse.microprofile.health.Health;
+import org.eclipse.microprofile.health.HealthCheck;
+import org.eclipse.microprofile.health.HealthCheckResponse;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
+@Health
+@ApplicationScoped
+@Slf4j
+public class MongoHealthCheck implements HealthCheck {
+
+    @Inject
+    private MongoClient mongoClient;
+
+    @Override
+    public HealthCheckResponse call() {
+        log.info("Health check for mongo database  ");
+
+        HealthCheckResponse healthCheckResponse = null;
+        if (mongoClient != null) {
+            log.info("Mongo database active!");
+            healthCheckResponse = HealthCheckResponse.named(MongoHealthCheck.class.getSimpleName()).up().build();
+        } else {
+            log.error("Mongo database is not active!");
+            healthCheckResponse = HealthCheckResponse.named(MongoHealthCheck.class.getSimpleName()).down().build();
+        }
+        return healthCheckResponse;
+    }
+
+
+}
+
+```
+
+We are going to decompose the use of the Microprofile API; using the CDI context, our class that implements HealthCheck and is annotated with @Health are automatically discovered and invoked by the framework or runtime (microprofile). 
+
+After complementing the other features of Microprofile that we are incorporating to our project we will be able to verify the status of our HealthCheck accessing in the browser to the URL: http://localhost:9080/health having as a result:
+
+```
+{"checks":[{"data":{},"name":"MongoHealthCheck","state":"UP"},{"data":{},"name":"MeetupHealthCheck","state":"DOWN"}],"outcome":"DOWN"}
+```
+
+### Microprofile Metrics
+
+This specification aims to provide a unified way for microprofile servers to export monitoring data ("telemetry") to management agents and also a unified Java API, which all (application) programmers can use to expose their automatic monitoring data.
+
+The @Counted annotation provides a counter is a simple increase and decrease of time; in our case we want to know how many times our API Rest has been called; for that we will go to the file /start/application/src/main/java/org/ecjug/hackday/app/resources/MemberResource.java and we will include in our methods the annotation: 
+
+``
+@Counted(monotonic = true)
+``
+
+After complementing the other features of Microprofile that we are incorporating into our project we can verify the metrics of our methods by accessing the browser at the URL: https://localhost:9443/metrics 
+
+Where we are going to ask for the user and password that we define in our server.xml project application:
+
+![alt text](https://github.com/lasalazarr/workshop-05-monolith-microlith-microservices/blob/master/images/loginmetrics.png)
+
+With it we will verify the metricas that Microprofile provides to us.
+
+### Microprofile Open Api
+
+This MicroProfile specification is intended to provide a unified Java API for the OpenAPI v3 specification, which all application developers can use to expose their API documentation. By applying this Microprofile feature we will be able to view our API documentation in an easy-to-use user interface.
+
+To do this go to /start/application/src/main/java/org/ecjug/hackday/app/resources/MemberResource.java and include the annotations in your methods:
+
+- In our listMethods method we will include: Operation(summary = "List all Members")
+- And in our addMember method we will include: Operation(summary = "Creates a new Member") and in the method parameters: 
+
+``
+@RequestBody(description = "Specify the values to create a new Member",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                    schema = @Schema(implementation = Member.class))) Member member
+``
+
+Our class /start/application/src/main/java/org/ecjug/hackday/app/resources/MemberResource.java would look like this: 
+
+```
+package org.ecjug.hackday.app.resources;
+
+import org.ecjug.hackday.api.MembersService;
+import org.ecjug.hackday.domain.model.Member;
+import org.eclipse.microprofile.metrics.annotation.Counted;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
+import java.util.List;
+
+@ApplicationScoped
+@Produces({MediaType.APPLICATION_JSON})
+@Consumes(MediaType.APPLICATION_JSON)
+@Path("/member")
+public class MemberResource {
+
+    @Inject
+    private MembersService membersService;
+
+    @GET
+    @Path("/list")
+    @Counted(monotonic = true)
+    @Operation(summary = "List all Members")
+    public List<Member> listMembers() {
+        return membersService.list();
+    }
+
+    @POST
+    @Path("/add")
+    @Counted(monotonic = true)
+    @Operation(summary = "Creates a new Member")
+    public Member addMember(@RequestBody(description = "Specify the values to create a new Member",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                    schema = @Schema(implementation = Member.class))) Member member) {
+        return membersService.add(member);
+    }
+}
+
+```
+
+After complementing the other features of Microprofile that we are incorporating into our project we can verify the documentation of our API by accessing the browser to the URL: http://localhost:9080/openapi/ui/ and we will have as a result:
+
+alt text](https://github.com/lasalazarr/workshop-05-monolith-microlith-microservices/blob/master/images/openapi.png)
+
+### Microprofile Fault Tolerance
+
+Fault tolerance consists of taking advantage of different strategies to guide the execution and outcome of a certain logic. 
+
+Microprofile includes support for Fault Tolerance with the following aspects: 
+
+Timeout: Define a duration for the timeout
+
+RetryPolicy: Defining criteria on when to try again
+
+Fallback: provides an alternative solution for failed execution.
+
+Bulkhead: Allows us to isolate faults in part of the system while the rest of the system can still work.
+
+CircuitBreaker: Provides a way to fail quickly when execution fails automatically to prevent system overload and indefinite waiting or waiting time by customers.
+
+Next we are going to implement in our project some of these features; for this we are going to go to the file /start/api-impl/src/main/java/org/ecjug/hackday/api/impl/client/GroupServiceImpl.java specifically to the loadFromMeetUp method:
+
+```
+    @Override
+    @Metered //measuring the rate of events over time
+    @Timed(name = "loadFromMeetUpTime") //measures how long a method or block of code takes to execute
+    @CircuitBreaker
+    @Retry(maxRetries = 1)
+    @Fallback(fallbackMethod = "loadFromMeetUpOnError")
+    public List<Group> loadFromMeetUp() {
+        //34--> tech category on meetup
+        List<HashMap> techGroups = meetUpApi().techGroups("34", meetUpApiKey);
+        List<Group> groupList = toGroupList(techGroups);
+        groupList.forEach(this::add);
+        return groupList;
+    }
+```
+
+We will find in our method the application @Timed, @CircuitBreaker, @Retry and @Fallback. We invite you to analyze each of them and discuss where we can apply them in our day to day as developers; additionally you can verify our test of this business layer where you can verify the behavior of each of these features of Microprofile in the file /start/api-impl/src/test/java/org/ecjug/hackday/api/impl/test/GroupServiceTest.java
+
+Finally we invite you to browse the code of our application and quote where we are using features such as:
+
+- Config
+- Rest Client
+- CDI
+
+### Running our server
+
+To compile the application we can execute:
+
+``
+mvn install
+``
+
+At the console we are going to see that several tests of unit and of integration are executed until arriving to have in console:
+
+```
+[INFO] Reactor Summary:
+[INFO] 
+[INFO] HackDay ::: Monolith Microlith Microservices ....... SUCCESS [  0.913 s]
+[INFO] HackDay ::: Mongo Embedded ......................... SUCCESS [ 10.139 s]
+[INFO] HackDay ::: Domain ................................. SUCCESS [  0.805 s]
+[INFO] HackDay ::: Repository ............................. SUCCESS [ 14.106 s]
+[INFO] HackDay ::: API .................................... SUCCESS [  0.112 s]
+[INFO] HackDay ::: API Implementation ..................... SUCCESS [ 26.412 s]
+[INFO] HackDay ::: Application ............................ SUCCESS [ 21.816 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 01:14 min
+[INFO] Finished at: 2019-01-11T13:30:26-05:00
+[INFO] Final Memory: 37M/137M
+[INFO] ------------------------------------------------------------------------
+
+```
+
+Next, we can run our server in the application module we run liberty:start-server:
+
+``
+mvn liberty:start-server
+``
+
+To stop the server we can run:
+
+
+``
+mvn liberty:stop-server
+``
+
+### Running as docker container
+
+At the time of compiling the application denoted a delay, which had to do with the creation of the image of our openliberty server, to run the image created in console we can see the id with which it was created running: 
+
+``
+docker images
+``
+
+At the console we will find our image created at the time we compile our project as follows:
+
+```
+REPOSITORY                                TAG                 IMAGE ID            CREATED             SIZE
+application                               1.0.0-SNAPSHOT      32dcf8b6bc25        11 minutes ago      538MB
+```
+
+In console to execute our container we can execute (verify the IMAGE ID by listing the previous command):
+
+``
+docker run -d --name hack-hay-app -p 9080:9080 -p 9443:9443 32dcf8b6bc25
+``
+
+We have finished our third exercise of code; now we are going to pass to laboratory 4 where we will simulate that our application has grown and we are going to separate it in Microservices since at the moment we have been working on the concept of Monolith or as most organizations end with Microliths.
+
+## Microliths
+
+Many organizations and development teams in their attempt to have microservices have ended up in a style of applications called Microlito. 
+
+Many are not familiar with the term, but have sought to perform Microservices but do not meet characteristics such as:
+
+- Resiliance
+- Scaling
+- Independent deployment
+- Your own schema
+- Accessing data through APIs
+
+They've come to have a Microlite instead of Microservices.
+
+In short, many institutions and companies have an attempt to perform microservices but what we have come to is having our Monoliths deployed in containers and with dependencies at unique points of failure.
+
+## Microservices
+
+"Microservices" is the buzzword since Netflix popularizes it, it is a pattern of architecture that everyone wants to have, but few manage to realize. As we mentioned in the definition of Microlitos is easy to verify that we came to meet this pattern and has to do mainly with responding to the characteristics just cited, ie:
+
+- Resiliance
+- Scaling
+- Independent deployment
+- Your own schema
+- Accessing data through APIs
+
+We are not going to go into the theoretical definition of Microservices; and we are going to take our practical case where we are going to imagine that by the high use of our application and our development team to scale in size since we have had success with our application of event registration of members of java users we need to divide it into microservices. 
+
+
+
+
+
+
+
+
