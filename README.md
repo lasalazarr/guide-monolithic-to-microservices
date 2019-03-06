@@ -693,7 +693,7 @@ public class MemberResource {
 
 After complementing the other features of Microprofile that we are incorporating into our project we can verify the documentation of our API by accessing the browser to the URL: http://localhost:9080/openapi/ui/ and we will have as a result:
 
-alt text](https://github.com/lasalazarr/workshop-05-monolith-microlith-microservices/blob/master/images/openapi.png)
+![alt text](https://github.com/lasalazarr/workshop-05-monolith-microlith-microservices/blob/master/images/openapi.png)
 
 ### Microprofile Fault Tolerance
 
